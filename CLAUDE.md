@@ -66,6 +66,13 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   entry. That's how we isolate "which message is this".
 - **This bus**: reads use `PBSB=0621` + a 4-byte memory address as `ID` (read-memory service).
   Writes/setpoints use a different service — discover it from the grab, don't assume `0621`.
+- **TEM read-memory ID layout** = `<2-byte datapoint addr LE><2-byte subsystem selector>`.
+  Selector `0040` = main unit (circuit 15); other blocks seen: `0042 004a 0050 0008 000a 0010`
+  (heat-circuit / Wärmemanager / WE sub-units). The datapoint addr is **linear in the documented
+  TEM "02-0xx" parameter number**: `addr = 0x02b5 + (DP − 53)`, e.g. DP 02-053→`02b5` (HpMode),
+  02-070→`02c6`, 02-072→`02c8`. So the `02xx` block we poll IS the controller's datapoint table.
+  Source of truth for names/types: `john30/ebusd-configuration` → `archived/en/tem/15.csv` and the
+  modern `src/tem/15.tsp`. See `.claude/skills/ebus/reference/decode-findings.md`.
 - Temperatures here are mostly `SIN` (2 bytes, little-endian, signed) with divisor `10`
   (raw 230 = 23.0 °C), encoded in the telegram as `e6 00`.
 
