@@ -31,7 +31,13 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
 - Manufacturer **TEM**. Slaves seen: `15` (=circuit **22102**, the main controller),
   `08`/`18` (WE_1/WE_2 = Wärmeerzeuger), `06`. ebusd's own address: master `31` / slave `36`.
 - **Active config: only `/etc/ebusd/config/15.22102.csv`** (custom, not from the public repo).
-  43 messages, currently **all `r` (read), no `w` yet** — building writes is the point.
+  After cleanup (2026-06-29): **29 `r` messages, no `w` yet** — building writes is the point.
+  Each read row skips the 8-byte TEM metadata block via `IGN:8` and exposes one value field.
+- **Passwordless sudo is available** for `thomas` (`/etc/sudoers.d/`), so I can
+  `sudo systemctl restart ebusd` myself (needed to reload `mqtt-hassio.cfg`; `ebusctl reload`
+  only reloads CSV defs, not the MQTT integration file).
+- **HA MQTT discovery is now retained** (`definition-retain = 1` in `mqtt-hassio.cfg`).
+  Discovery is published per message only after it has produced data at least once.
 
 ## eBUS / ebusd mental model (quick)
 - Telegram = `QQ ZZ PB SB NN <data...>` (master→slave); slave may answer with `NN <data>`.
