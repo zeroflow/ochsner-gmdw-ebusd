@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ebusctl info:*)",
+      "Bash(ebusctl state:*)",
+      "Bash(ebusctl find:*)",
+      "Bash(ebusctl read:*)",
+      "Bash(ebusctl decode:*)",
+      "Bash(ebusctl grab:*)",
+      "Bash(*/ebus.sh snapshot:*)",
+      "Bash(*/ebus.sh diff:*)",
+      "Bash(*/ebus.sh scanvalue:*)",
+      "Bash(*/ebus.sh decode:*)",
+      "Bash(*/ebus.sh info:*)",
+      "Bash(*/ebus.sh msg:*)",
+      "Bash(*/ebus.sh grabreset:*)",
+      "Bash(*/ebus.sh diffcfg:*)"
+    ]
+  }
+}
