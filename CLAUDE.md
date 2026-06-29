@@ -33,9 +33,19 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
 - Manufacturer **TEM**. Slaves seen: `15` (=circuit **22102**, the main controller),
   `08`/`18` (WE_1/WE_2 = Wärmeerzeuger), `06`. ebusd's own address: master `31` / slave `36`.
 - **Active config: only `/etc/ebusd/config/15.22102.csv`** (custom, not from the public repo).
-  After cleanup (2026-06-29): **29 `r1` (polled) read messages, no `w` yet** — building writes
-  is the point. Each row skips the 8-byte TEM metadata block via `IGN:8` and exposes one value
-  field. All are `r1` so ebusd polls them (`poll: 29`, ~2.5 min cycle) → HA stays current.
+  After cleanup (2026-06-29): **30 `r1` (polled) read messages + the first `w` (write)**. Each read
+  row skips the 8-byte TEM metadata block via `IGN:8` and exposes one value field. All reads are
+  `r1` so ebusd polls them (~2.5 min cycle) → HA stays current.
+- **First working write (2026-06-29): `SetKuehlgrenze`** (cooling limit). TEM write pattern:
+  **`ZZ=10`, `PBSB=0623`** (write-memory; `10` = controller master-face ≡ slave `15`), bare value
+  (no `IGN`). Reads of the same datapoint use `ZZ=15`/`0621`/`IGN:8`. **Write rows need an explicit
+  circuit** (`w,22102,…`) — a blank circuit + master ZZ=`10` makes ebusd silently drop the row.
+  Verified live (`write -c 22102 SetKuehlgrenze 24` → ACK, no expert/password gate). Datapoint
+  `6386000a`, `SIN`÷2 °C. Details + bus topology in `.claude/skills/ebus/reference/decode-findings.md`.
+- **Bus topology**: the adapter sits between the WP and the **cellar display** → changes on the
+  **cellar display** cross our wire (capturable/replayable). The **EG room terminal** is on a
+  separate sub-bus behind the controller → its writes are invisible to us. To decode a setpoint,
+  change it on the **cellar display**.
 - **Passwordless sudo is available** for `thomas` (`/etc/sudoers.d/`), so I can
   `sudo systemctl restart ebusd` myself (needed to reload `mqtt-hassio.cfg`; `ebusctl reload`
   only reloads CSV defs, not the MQTT integration file).
