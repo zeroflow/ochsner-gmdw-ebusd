@@ -42,6 +42,19 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
 - **HA MQTT discovery is now retained** (`definition-retain = 1` in `mqtt-hassio.cfg`).
   Discovery is published per message only after it has produced data at least once.
 
+## Heat pump (the device behind circuit 22102)
+- **Ochsner GMDW 11 HK plus** (Baureihe *Golf Midi Plus*, Best.-Nr. 274600). TEM controller,
+  config matches public `ebus.github.io/de/ochsner/15.22102.csv`.
+- **Erdreich-Direktverdampfung** (DX ground-source), **monovalent**. Refrigerant **R407C**.
+  → No brine/water source circuit ⇒ source-side water sensors don't exist (HpSourceTempIn/Out
+  were dummy `unit=0x00` and got removed; `HpVolume2` "Volumenstrom Wärmequelle" is suspect too).
+- **Compressor: single-stage FIXED-SPEED Scroll, ~2900 rpm.** No inverter/modulation ⇒ the HP
+  runs strictly **on/off**. This validates `HpCycles` = compressor speed in **RPS** (≈0 off /
+  ~constant running), and rules out the "modulation %" reading.
+- Heating-side nominal flow **2.1 m³/h ≈ 35 l/min** (supports `HpVolume1` in l/min, ~part-load
+  now). **Max flow temp (TV) 65 °C**, DHW max 65 °C → sane upper bound when we build *write*
+  setpoints (don't command above 65 °C).
+
 ## eBUS / ebusd mental model (quick)
 - Telegram = `QQ ZZ PB SB NN <data...>` (master→slave); slave may answer with `NN <data>`.
   `QQ`=source master addr, `ZZ`=destination, `PB SB`=service (command) bytes, then ID+payload.
