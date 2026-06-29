@@ -18,8 +18,10 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
 - Every applied config change is git-committed in `/etc/ebusd/config`.
 
 ## Git / tracking
-- `/etc/ebusd/config` — git repo, the **config history** (rollback-ready). Commit on every
-  applied change via `ebus.sh commit "<msg>"`.
+- `/etc/ebusd` — git repo (root), the **config history** (rollback-ready). Tracks
+  `config/15.22102.csv` **and** the `.cfg` files (`mqtt-hassio.cfg`, `mqtt-integration.cfg`,
+  `knx.cfg`). Commit on every applied change via `ebus.sh commit "<msg>"`. Operated as
+  `thomas` on a root-owned dir → added to git `safe.directory`.
 - `/home/thomas/claude` — git repo, the **tooling + notes** (CLAUDE.md, the `ebus` skill,
   decode-session notes). `recordings/` (raw grab snapshots) is gitignored.
 

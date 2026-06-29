@@ -6,12 +6,12 @@
 # Config via env (defaults shown):
 #   EBUSCTL   = ebusctl
 #   EBUS_HOST = (local socket; ebusctl default)   set to talk to remote
-#   CONFIG_DIR = /etc/ebusd/config
+#   CONFIG_DIR = /etc/ebusd  (git repo root: tracks config/*.csv + the .cfg files)
 #   REC_DIR    = /home/thomas/claude/recordings
 set -euo pipefail
 
 EBUSCTL="${EBUSCTL:-ebusctl}"
-CONFIG_DIR="${CONFIG_DIR:-/etc/ebusd/config}"
+CONFIG_DIR="${CONFIG_DIR:-/etc/ebusd}"
 REC_DIR="${REC_DIR:-/home/thomas/claude/recordings}"
 
 ctl() { $EBUSCTL "$@"; }
