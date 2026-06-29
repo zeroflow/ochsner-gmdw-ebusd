@@ -52,6 +52,18 @@ Give it the confirmed `w` line + target file `/etc/ebusd/config/15.22102.csv`:
 With explicit OK: `ebusctl write -c 22102 <Name> 23`, then `ebus.sh msg <Name>` and/or
 check MQTT/Home Assistant. Commit any follow-up tweak.
 
+## MQTT / Home Assistant helpers (broker 192.168.4.11:1883, anonymous)
+No mosquitto clients on this box — use the pure-socket helpers in `scripts/`:
+- `python3 scripts/mqtt_dump.py '<topicfilter>' [idle_s] ['<substr>']` — list retained
+  topics (e.g. `homeassistant/#` for HA discovery configs). With a substring 3rd arg it
+  also prints the matching payloads. `[R]` = retained.
+- `python3 scripts/mqtt_pub.py '<topic>' ...` — publish an EMPTY RETAINED payload to each
+  topic = clear a retained discovery config so HA deletes that entity. Use after removing
+  a message from the CSV (discovery is retained via `definition-retain=1`).
+ebusd discovery topic = `homeassistant/sensor/ebusd_22102_<Msg>_<field>/config`. Display
+name comes from the CSV message comment (`%messagecomment`); unit + state_class come from
+the field unit via the cfg `type_switch`. A field with NO unit → no graph in HA.
+
 ## Notes
 - Periodic broadcasts (`10fe100a...`) change every cycle — that's why `scanvalue` grepping
   beats eyeballing the diff. The target telegram is the one matching BOTH old→new patterns.
