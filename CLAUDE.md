@@ -51,6 +51,19 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   only reloads CSV defs, not the MQTT integration file).
 - **HA MQTT discovery is now retained** (`definition-retain = 1` in `mqtt-hassio.cfg`).
   Discovery is published per message only after it has produced data at least once.
+- **HA discovery gotchas (mqtt-hassio.cfg) — a new message won't appear unless it passes the
+  filters in that file, and the file is only re-read on a full `systemctl restart ebusd`** (not
+  `ebusctl reload`):
+  - `filter-name` is a **whitelist** of message-name substrings (`…|flow|part|kwh|grenze|…`). A
+    message whose name contains none of the tokens is silently dropped from HA. Added `grenze` so
+    `Kuehlgrenze`/`SetKuehlgrenze` pass — add a token when introducing a differently-named message.
+  - `filter-direction = r|u|^w` — the `^w` was added to expose **write** messages as settable HA
+    entities (a `w` temp field → `number` entity via `type_switch-w-number`). Without it writes are
+    hidden. Write-message discovery is NOT gated by "seen" (publishes right after restart); read
+    sensors publish after their first poll.
+  - A settable number's state_topic is the write message (unpolled) → shows "unknown" until first
+    set; the paired `r1` read message is the live-value sensor. ebusd derives the number's
+    min/max from the field datatype (SIN÷2 → ±16383.5, step 0.5) — not bounded to a sane range.
 
 ## Heat pump (the device behind circuit 22102)
 - **Ochsner GMDW 11 HK plus** (Baureihe *Golf Midi Plus*, Best.-Nr. 274600). TEM controller,
