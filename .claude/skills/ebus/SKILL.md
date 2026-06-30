@@ -63,6 +63,13 @@ No mosquitto clients on this box — use the pure-socket helpers in `scripts/`:
 ebusd discovery topic = `homeassistant/sensor/ebusd_22102_<Msg>_<field>/config`. Display
 name comes from the CSV message comment (`%messagecomment`); unit + state_class come from
 the field unit via the cfg `type_switch`. A field with NO unit → no graph in HA.
+- **A new `r1` READ sensor appears in HA only after the `r1` POLL has published its value
+  to MQTT at least once — NOT after a manual `ebusctl read -f`.** A forced read only fills
+  ebusd's cache; it does not go through the MQTT publish path, so no `ebusd/…` data topic and
+  no `homeassistant/sensor/…/config` discovery yet. After adding a read, **wait ~1 poll cycle
+  (~2.5 min)** and verify with `mqtt_dump.py 'ebusd/#' 2 '<name>'`; don't conclude "HA is
+  broken" from a `read -f` that returned a value. (WRITE/`number` entities are different — they
+  publish discovery immediately on restart, before any data.)
 
 ## Notes
 - Periodic broadcasts (`10fe100a...`) change every cycle — that's why `scanvalue` grepping

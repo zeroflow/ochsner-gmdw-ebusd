@@ -74,3 +74,26 @@ matches. **No expert/password gate hit** — the write was accepted directly.
   EG terminal, so the write is on our wire.
 - Sub-unit `91` (cooling/Wärmemanager) mirrors the value in its own format (UCH ÷2 at offset 7 of
   the `100a 210b` block) but does **not** answer our master 31 — observe-only.
+
+## Cooling-mode room temps Tag/Nacht — write, verified (2026-06-30)
+Decoded by changing both on the **cellar display** (Tag 24→25, Nacht 23→24) with grab reset; the
+two write telegrams (`01 10 0623 06 <id> <val>`) plus the read-backs just before pinned them.
+
+| name | datapoint ID | ZZ/PBSB (read) | ZZ/PBSB (write) | datatype |
+|---|---|---|---|---|
+| Kühlmodus **Tag** | `03b6004a` | 15/`0621` | 10/`0623` | `SIN` ÷10 °C |
+| Kühlmodus **Nacht** | `03b8004a` | 15/`0621` | 10/`0623` | `SIN` ÷10 °C |
+
+Active rows added: `KuehlRaumTag`/`SetKuehlRaumTag`, `KuehlRaumNacht`/`SetKuehlRaumNacht`.
+Reads confirmed live (25.0 / 24.0). Same write-memory pattern as Kühlgrenze (ZZ=10, PBSB=0623,
+explicit circuit `22102`, bare value).
+
+### Two findings worth keeping
+- **Subsystem block `004a` holds the heat-circuit room SETPOINTS** (Tag/Nacht room temps live
+  here: `03b6`, `03b8`), distinct from `000a` which held the **limit** value Kühlgrenze (`6386`).
+  So don't assume a new setpoint shares the block of a nearby one — take the 4-byte ID straight
+  from the grab. (Datapoint addr `03b6/03b8` ≠ the `02xx` linear table; `0xxx` low addrs and the
+  `04`-family blocks are their own ranges.)
+- **The SIN divisor is per-datapoint, not global.** Kühlgrenze = SIN÷2 (0.5° steps); these room
+  temps = SIN÷10 (0.1°). Verify the divisor against the known old/new raw bytes in the grab
+  (e.g. 25.0 → `fa00`=250 ⇒ ÷10) — never carry over the previous datapoint's divisor.

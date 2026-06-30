@@ -64,6 +64,12 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   - A settable number's state_topic is the write message (unpolled) → shows "unknown" until first
     set; the paired `r1` read message is the live-value sensor. ebusd derives the number's
     min/max from the field datatype (SIN÷2 → ±16383.5, step 0.5) — not bounded to a sane range.
+  - **A new `r1` READ sensor only appears in HA after its POLL has published once — a manual
+    `ebusctl read -f` does NOT trigger it** (it fills ebusd's cache only, no MQTT publish, no
+    discovery). After adding reads, wait ~1 poll cycle (~2.5 min) and check
+    `mqtt_dump.py 'ebusd/#' 2 '<name>'`; don't diagnose "HA broken" from a `read -f` value.
+    Write/`number` entities publish discovery immediately on restart (before any data) — which
+    is why you can see the setpoints but not yet the reads right after a restart.
 
 ## Heat pump (the device behind circuit 22102)
 - **Ochsner GMDW 11 HK plus** (Baureihe *Golf Midi Plus*, Best.-Nr. 274600). TEM controller,
