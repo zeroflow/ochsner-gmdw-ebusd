@@ -1,0 +1,45 @@
+# ebusd ↔ Home Assistant: combined set+get number entities
+# =========================================================
+# One self-contained `template number` per writable datapoint. Each wraps the
+# ebusd MQTT-discovery entities into a SINGLE entity that:
+#   - reads the live value from the polled  sensor.<...>   (getter)
+#   - writes via                            number.<...>   (setter, → bus)
+# and imposes a SANE min/max (ebusd derives ±16383.5 from the SIN datatype).
+#
+# Entity-id scheme (deterministic, pinned via "object_id" in mqtt-hassio.cfg):
+#     <domain>.ebusd_<circuit>_<MessageName>_<field>   (lowercased)
+#   e.g.  number.ebusd_22102_setkuehlgrenze_temp   (setter)
+#         sensor.ebusd_22102_kuehlgrenze_temp      (getter)
+#
+# IMPORT
+#   configuration.yaml:
+#     template: !include ebusd_templates.yaml      # if you have no other template:
+#   ...or, if `template:` already exists, merge the list below into it, or use:
+#     template: !include_dir_merge_list ha_templates/   # and drop this file in there
+#   Then: Developer Tools → YAML → Check config → Reload "Template entities".
+#
+# Prereq: the pinned-id ebusd entities must exist. After enabling object_id you
+# must delete the old MQTT device/entities once in HA so they get re-created with
+# the new ids (see CLAUDE.md "HA entity-id pinning").
+
+template:
+  - number:
+      # --- Kühlgrenze / Sollwert Kühlen -------------------------------------
+      - name: "Kühlgrenze Sollwert Kühlen"
+        unique_id: ebus_22102_kuehlgrenze_combined
+        state: "{{ states('sensor.ebusd_22102_kuehlgrenze_temp') }}"
+        availability: "{{ has_value('sensor.ebusd_22102_kuehlgrenze_temp') }}"
+        min: 15
+        max: 40          # matches the cellar-display UI range for this setpoint
+        step: 0.5
+        unit_of_measurement: "°C"
+        device_class: temperature
+        set_value:
+          - action: number.set_value
+            target:
+              entity_id: number.ebusd_22102_setkuehlgrenze_temp
+            data:
+              value: "{{ value }}"
+
+      # --- next pair goes here ----------------------------------------------
+      # Copy the block above, swap the sensor/number entity-ids and min/max.

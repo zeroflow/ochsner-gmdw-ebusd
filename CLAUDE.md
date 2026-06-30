@@ -80,6 +80,23 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
     `mqtt_dump.py 'ebusd/#' 2 '<name>'`; don't diagnose "HA broken" from a `read -f` value.
     Write/`number` entities publish discovery immediately on restart (before any data) — which
     is why you can see the setpoints but not yet the reads right after a restart.
+- **HA entity-id pinning (set 2026-06-30): `object_id` is emitted in `definition-payload`**
+  (`"object_id":"%{TOPIC}_%FIELD"`). Without it HA derives the entity_id from the *comment*
+  (`slugify(device-name + name)`) → fragile (changes if you edit the CSV comment, `_2` on
+  collision). With it the entity_id is **deterministic from circuit+message+field**:
+  `<domain>.ebusd_<circuit>_<MessageName>_<field>` lowercased, e.g.
+  `number.ebusd_22102_setkuehlgrenze_temp` (setter) and `sensor.ebusd_22102_kuehlgrenze_temp`
+  (getter). This is what the repo's `homeassistant/` templates reference.
+  - **`object_id` only takes effect at FIRST discovery of a unique_id.** Entities already in HA's
+    registry keep their old name-based id. To migrate: delete the MQTT device (or the affected
+    entities) in HA → `systemctl restart ebusd` → they reappear with the pinned id.
+
+## Home Assistant config (`homeassistant/` in this repo)
+- Publishable HA YAML the user pulls into their HA box. `ebusd_templates.yaml` = one
+  `template number` per writable datapoint, wrapping the ebusd getter `sensor.…` + setter
+  `number.…` into a single entity with sane min/max (ebusd's own min/max is ±16383.5 from SIN).
+  Import via `template: !include ebusd_templates.yaml` (header documents the merge variants).
+  Add a new block here whenever a new write datapoint is decoded + pinned.
 
 ## Heat pump (the device behind circuit 22102)
 - **Ochsner GMDW 11 HK plus** (Baureihe *Golf Midi Plus*, Best.-Nr. 274600). TEM controller,
