@@ -105,6 +105,15 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   `number.…` into a single entity with sane min/max (ebusd's own min/max is ±16383.5 from SIN).
   Import via HA "packages" (header documents the exact include). Add a new block here whenever a
   new write datapoint is decoded; reference the live name-based ids (see "HA entity-id scheme").
+  - **`device_id` is NOT a valid option for YAML state-based `template` entities** (HA rejects it:
+    "invalid option for 'template'"). So the combined template numbers can't be bound to the
+    "ebusd 22102" device from YAML — assign their **Area** ("Heating") in the UI instead, or build
+    them as UI Template helpers. The raw ebusd setters/getters DO live on the device.
+  - **Raw ebusd setters moved to the device's Configuration section** via `"entity_category":"config"`
+    in `type_part-number` (mqtt-hassio.cfg) — declutters the main device view; the template numbers
+    are the primary controls. Read sensors stay default (main).
+  - Three write pairs live so far: `Kuehlgrenze` (15–40 °C, verified) and `KuehlRaumTag`/
+    `KuehlRaumNacht` (room cooling setpoints, min/max 18–30 still a guess → verify in cellar UI).
 
 ## Heat pump (the device behind circuit 22102)
 - **Ochsner GMDW 11 HK plus** (Baureihe *Golf Midi Plus*, Best.-Nr. 274600). TEM controller,
