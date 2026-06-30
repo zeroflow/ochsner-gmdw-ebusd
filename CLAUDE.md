@@ -144,9 +144,17 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   65 °C → sane upper bound when we build *write* setpoints (don't command above 65 °C).
 - **Energy counters** (`7d87..7d8c`, live-verified 2026-06-30): Heiz 149 MWh + 207.0 kWh,
   Kühl 4 MWh + 7.8 kWh, WW 32 MWh + 818.7 kWh. kWh field is the sub-MWh remainder (<1000).
-  Still TODO: **Schaltzyklen** (~70165) + **Betriebsstunden** (~17136) — both >16-bit so they
-  sit on longer (ULG/4-byte) telegrams that the kWh/MWh capture (all NN=0x0a, 10-byte) missed;
-  re-record while on those specific screens.
+- **Schaltzyklen (~70166) + Betriebsstunden (~17137): NOT capturable on our wire — confirmed
+  dead-end 2026-06-30, don't retry blindly.** Both are >16-bit ⇒ need a 4-byte answer (NN=0x0c).
+  Tried & failed: (1) two menu-navigation grabs, (2) a full cellar-display **cold boot** grab,
+  (3) direct address probing (`7d8d+` and the DP-formula `02d0/02d1` — all return either the
+  `ff9f…` "not present" marker or unrelated 2-byte values). **Decisive proof: across the whole
+  boot, EVERY `0621` read-memory answer on our segment is `NN=0x0a` (8-byte meta + 2-byte value);
+  no `NN=0x0c` 4-byte telegram EVER crosses our wire.** The public TEM config puts them at
+  `7d87/7d88` selector 0002 (HCD), but that's our *energy* block — our unit's layout diverges.
+  Conclusion: these two counters live **display-local (own NVRAM) or behind the controller on the
+  invisible sub-bus** (like the EG terminal); unreachable from the WP↔cellar-display tap. Energy
+  kWh/MWh ARE reachable and mapped; cycles/hours are not.
 
 ## eBUS / ebusd mental model (quick)
 - Telegram = `QQ ZZ PB SB NN <data...>` (master→slave); slave may answer with `NN <data>`.
