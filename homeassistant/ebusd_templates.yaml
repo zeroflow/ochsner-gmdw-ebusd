@@ -32,6 +32,13 @@ template:
       # --- Kühlgrenze / Sollwert Kühlen -------------------------------------
       - name: "Kühlgrenze Sollwert Kühlen"
         unique_id: ebus_22102_kuehlgrenze_combined
+        # Attach this template entity to the ebusd "ebusd 22102" device (template
+        # helpers are device-less by default). device_id is INSTANCE-SPECIFIC — look
+        # it up once: HA → Settings → Devices → "ebusd 22102"; the URL ends in
+        # /config/devices/device/<device_id>. Paste that 32-char id below. It stays
+        # stable as long as that MQTT device isn't deleted (clearing entity discovery
+        # does NOT delete the device). Uncomment + paste the id to attach:
+        #device_id: 0123456789abcdef0123456789abcdef
         state: "{{ states('sensor.ebusd_22102_kuehlgrenze_temp') }}"
         availability: "{{ has_value('sensor.ebusd_22102_kuehlgrenze_temp') }}"
         min: 15
