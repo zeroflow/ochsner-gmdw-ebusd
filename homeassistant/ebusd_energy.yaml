@@ -22,14 +22,17 @@
 #     sensor.wp_heizenergie_monatlich. Verify in Developer Tools → States.
 #
 # PREREQ ebusd source entities (appear after first poll, ~13 min for r9 energy).
-#   NOTE: these ids are name-based (slug of the CSV comment) AND sticky in HA's
-#   registry, so they are NOT consistent — Heizung kept an old English-comment id
-#   while Kühl/WW follow the German comment. The actual ids on THIS HA are:
-#   sensor.heating_ebusd_22102_hpheatmwh              / _hpheatkwh
+#   The ids below are the CLEAN form a fresh HA derives from the current CSV
+#   comments (slug of "Heizenergie (MWh)" etc.):
+#   sensor.heating_ebusd_22102_heizenergie_mwh        / _heizenergie_kwh
 #   sensor.heating_ebusd_22102_kuhlenergie_mwh        / _kuhlenergie_kwh
 #   sensor.heating_ebusd_22102_warmwasserenergie_mwh  / _warmwasserenergie_kwh
-#   Always verify in Developer Tools → States before trusting these.
-# and the physical electricity meter:  sensor.zahlerstand_warmepumpe
+#   sensor.zahlerstand_warmepumpe   (physical electricity meter)
+#
+#   CAVEAT on an existing HA: these ids are name-based AND sticky in the registry.
+#   If a message was first discovered under a different comment, its id keeps the
+#   OLD slug (e.g. _hpheatkwh, _hpcoolkwh) and won't match the clean form above.
+#   Verify each in Developer Tools → States and adjust the references if they differ.
 #
 # IMPORT (HA "packages"): copy to /config/packages/ebusd_energy.yaml, keep the
 #   top-level keys as-is. configuration.yaml once:
@@ -48,11 +51,11 @@ template:
         device_class: energy
         state_class: total_increasing
         availability: >
-          {{ has_value('sensor.heating_ebusd_22102_hpheatmwh')
-             and has_value('sensor.heating_ebusd_22102_hpheatkwh') }}
+          {{ has_value('sensor.heating_ebusd_22102_heizenergie_mwh')
+             and has_value('sensor.heating_ebusd_22102_heizenergie_kwh') }}
         state: >
-          {{ states('sensor.heating_ebusd_22102_hpheatmwh') | float(0) * 1000.0
-             + states('sensor.heating_ebusd_22102_hpheatkwh') | float(0) }}
+          {{ states('sensor.heating_ebusd_22102_heizenergie_mwh') | float(0) * 1000.0
+             + states('sensor.heating_ebusd_22102_heizenergie_kwh') | float(0) }}
 
       - name: "WP Kühlenergie"
         unique_id: wp_kuehlenergie_kwh
