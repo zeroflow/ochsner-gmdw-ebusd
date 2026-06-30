@@ -133,13 +133,20 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   config matches public `ebus.github.io/de/ochsner/15.22102.csv`.
 - **Erdreich-Direktverdampfung** (DX ground-source), **monovalent**. Refrigerant **R407C**.
   → No brine/water source circuit ⇒ source-side water sensors don't exist (HpSourceTempIn/Out
-  were dummy `unit=0x00` and got removed; `HpVolume2` "Volumenstrom Wärmequelle" is suspect too).
+  were dummy `unit=0x00` and got removed). The old `HpVolume1`/`HpVolume2` "Volumenstrom"
+  rows were **mislabeled guesses** — live capture 2026-06-30 proved `7d87..7d8c` are interleaved
+  **energy counters** (Heiz/Kühl/WW × kWh,MWh), not flow; renamed `HpHeatKwh/HpHeatMwh/HpCoolKwh/
+  HpCoolMwh/HpHwcKwh/HpHwcMwh` (UIN, kWh ÷10 / MWh ÷1; old `HpHours` at `7d87` was wrong too).
 - **Compressor: single-stage FIXED-SPEED Scroll, ~2900 rpm.** No inverter/modulation ⇒ the HP
   runs strictly **on/off**. This validates `HpCycles` = compressor speed in **RPS** (≈0 off /
   ~constant running), and rules out the "modulation %" reading.
-- Heating-side nominal flow **2.1 m³/h ≈ 35 l/min** (supports `HpVolume1` in l/min, ~part-load
-  now). **Max flow temp (TV) 65 °C**, DHW max 65 °C → sane upper bound when we build *write*
-  setpoints (don't command above 65 °C).
+- Heating-side nominal flow **2.1 m³/h ≈ 35 l/min**. **Max flow temp (TV) 65 °C**, DHW max
+  65 °C → sane upper bound when we build *write* setpoints (don't command above 65 °C).
+- **Energy counters** (`7d87..7d8c`, live-verified 2026-06-30): Heiz 149 MWh + 207.0 kWh,
+  Kühl 4 MWh + 7.8 kWh, WW 32 MWh + 818.7 kWh. kWh field is the sub-MWh remainder (<1000).
+  Still TODO: **Schaltzyklen** (~70165) + **Betriebsstunden** (~17136) — both >16-bit so they
+  sit on longer (ULG/4-byte) telegrams that the kWh/MWh capture (all NN=0x0a, 10-byte) missed;
+  re-record while on those specific screens.
 
 ## eBUS / ebusd mental model (quick)
 - Telegram = `QQ ZZ PB SB NN <data...>` (master→slave); slave may answer with `NN <data>`.
