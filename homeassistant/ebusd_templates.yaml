@@ -58,8 +58,8 @@ template:
         unique_id: ebus_22102_kuehlraumtag_combined
         state: "{{ states('sensor.heating_ebusd_22102_raumtemperatur_kuhlmodus_tag') }}"
         availability: "{{ has_value('sensor.heating_ebusd_22102_raumtemperatur_kuhlmodus_tag') }}"
-        min: 18
-        max: 30          # TODO verify against the cellar-display UI range
+        min: 20
+        max: 30          # cellar-display UI range
         step: 0.5
         unit_of_measurement: "°C"
         device_class: temperature
@@ -75,8 +75,8 @@ template:
         unique_id: ebus_22102_kuehlraumnacht_combined
         state: "{{ states('sensor.heating_ebusd_22102_raumtemperatur_kuhlmodus_nacht') }}"
         availability: "{{ has_value('sensor.heating_ebusd_22102_raumtemperatur_kuhlmodus_nacht') }}"
-        min: 18
-        max: 30          # TODO verify against the cellar-display UI range
+        min: 20
+        max: 30          # cellar-display UI range
         step: 0.5
         unit_of_measurement: "°C"
         device_class: temperature

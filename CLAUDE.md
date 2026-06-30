@@ -112,8 +112,8 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   - **Raw ebusd setters moved to the device's Configuration section** via `"entity_category":"config"`
     in `type_part-number` (mqtt-hassio.cfg) — declutters the main device view; the template numbers
     are the primary controls. Read sensors stay default (main).
-  - Three write pairs live so far: `Kuehlgrenze` (15–40 °C, verified) and `KuehlRaumTag`/
-    `KuehlRaumNacht` (room cooling setpoints, min/max 18–30 still a guess → verify in cellar UI).
+  - Three write pairs live so far: `Kuehlgrenze` (15–40 °C) and `KuehlRaumTag`/`KuehlRaumNacht`
+    (room cooling setpoints, 20–30 °C) — all min/max verified against the cellar-display UI.
 
 ## Heat pump (the device behind circuit 22102)
 - **Ochsner GMDW 11 HK plus** (Baureihe *Golf Midi Plus*, Best.-Nr. 274600). TEM controller,
