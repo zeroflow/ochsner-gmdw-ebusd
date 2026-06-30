@@ -52,6 +52,12 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   circuit** (`w,22102,…`) — a blank circuit + master ZZ=`10` makes ebusd silently drop the row.
   Verified live (`write -c 22102 SetKuehlgrenze 24` → ACK, no expert/password gate). Datapoint
   `6386000a`, `SIN`÷2 °C. Details + bus topology in `.claude/skills/ebus/reference/decode-findings.md`.
+- **Read and write can live on DIFFERENT IDs for the same datapoint — don't assume the write reuses
+  the read ID.** For Kühl/Heiz setpoints read==write ID (only `ZZ`/`PBSB` differ), but **Warmwasser
+  Soll** reads via `7982000e` (`DesiredHwcTemp`, selector `000e`) yet **writes** via `05b3004e`
+  (selector `004e`, the Warmwasserkreis-page block — same block as `WwPump`). Always capture the
+  actual `ZZ=10`/`0623` write telegram from the grab and use ITS ID for the `w` row; cross-check
+  by reading the paired getter (both showed 50.0). Verified live 2026-06-30, `SIN`÷10 °C.
 - **Bus topology**: the adapter sits between the WP and the **cellar display** → changes on the
   **cellar display** cross our wire (capturable/replayable). The **EG room terminal** is on a
   separate sub-bus behind the controller → its writes are invisible to us. To decode a setpoint,
@@ -65,8 +71,10 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   filters in that file, and the file is only re-read on a full `systemctl restart ebusd`** (not
   `ebusctl reload`):
   - `filter-name` is a **whitelist** of message-name substrings (`…|flow|part|kwh|grenze|…`). A
-    message whose name contains none of the tokens is silently dropped from HA. Added `grenze` so
-    `Kuehlgrenze`/`SetKuehlgrenze` pass — add a token when introducing a differently-named message.
+    message whose name contains none of the tokens is silently dropped from HA. Added `grenze`
+    (Kühl/Heizgrenze), `raum` (Kühl/Heiz Raum-Setpoints; replaced the older full-word `kuehlraum`),
+    and `pump` (`HcPump`/`WwPump`) — add/broaden a token when introducing a differently-named
+    message, then `systemctl restart ebusd` (filter changes need the cfg file re-read).
   - `filter-direction = r|u|^w` — the `^w` was added to expose **write** messages as settable HA
     entities (a `w` temp field → `number` entity via `type_switch-w-number`). Without it writes are
     hidden. Write-message discovery is NOT gated by "seen" (publishes right after restart); read
@@ -78,8 +86,13 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
     `ebusctl read -f` does NOT trigger it** (it fills ebusd's cache only, no MQTT publish, no
     discovery). After adding reads, wait ~1 poll cycle (~2.5 min) and check
     `mqtt_dump.py 'ebusd/#' 2 '<name>'`; don't diagnose "HA broken" from a `read -f` value.
-    Write/`number` entities publish discovery immediately on restart (before any data) — which
-    is why you can see the setpoints but not yet the reads right after a restart.
+    Write/`number` entities publish discovery immediately (before any data).
+  - **`ebusctl reload` DOES publish HA discovery for newly-added CSV messages** — confirmed
+    2026-06-30: a freshly-added `w` row's `number` discovery appeared right after `reload`, no
+    restart. So a **restart is only needed when `mqtt-hassio.cfg` itself changes** (filter tokens,
+    `type_switch`, retain) — NOT for new CSV reads/writes. (Read sensors still wait for their first
+    poll; write/`number` entities publish on the reload. The earlier "file only re-read on restart"
+    caveat is about the *cfg file*, not about whether new CSV messages get discovery.)
 - **HA entity-id scheme — name-based, NOT object_id (settled 2026-06-30 after testing).**
   ebusd *does* emit `"object_id":"%{TOPIC}_%FIELD"` in `definition-payload` (kept; it would give
   clean ids on a truly fresh HA), **but this HA ignores it.** The live entity_id is:
