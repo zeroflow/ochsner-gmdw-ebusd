@@ -37,3 +37,5 @@ r1,,,RoomTemp,Raumtemperatur,,,0621,0081004a,,,IGN:8,,,,temp,,SIN,10,°C,
 r1,,,HcPump,Umwälzpumpe Heizung,,,0621,0194004a,,,IGN:8,,,,onoff,,UCH,,,0=off;1=on
 r1,,,HcOutsideTemp2,Außentemperatur,,,0621,0080004a,,,IGN:8,,,,temp,,SIN,10,°C,
 r1,,,HcFloorTemp,Fußbodenheizung,,,0621,0082004a,,,IGN:8,,,,temp,,SIN,10,°C,
+r1,,,PufferVorlaufTemp,Puffer Vorlauf (Eintritt),,,0621,00870042,,,IGN:8,,,,temp,,SIN,10,°C,
+r1,,,PufferRuecklaufTemp,Puffer Rücklauf (Austritt),,,0621,00880042,,,IGN:8,,,,temp,,SIN,10,°C,
