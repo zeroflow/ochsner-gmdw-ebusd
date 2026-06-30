@@ -33,3 +33,7 @@ r1,,,KuehlRaumTag,Raumtemperatur Kühlmodus Tag,,,0621,03b6004a,,,IGN:8,,,,temp,
 w,22102,,SetKuehlRaumTag,Raumtemperatur Kühlmodus Tag,,10,0623,03b6004a,temp,,SIN,10,°C,
 r1,,,KuehlRaumNacht,Raumtemperatur Kühlmodus Nacht,,,0621,03b8004a,,,IGN:8,,,,temp,,SIN,10,°C,
 w,22102,,SetKuehlRaumNacht,Raumtemperatur Kühlmodus Nacht,,10,0623,03b8004a,temp,,SIN,10,°C,
+r1,,,RoomTemp,Raumtemperatur,,,0621,0081004a,,,IGN:8,,,,temp,,SIN,10,°C,
+r1,,,HcPump,Umwälzpumpe Heizung,,,0621,0194004a,,,IGN:8,,,,onoff,,UCH,,,0=off;1=on
+r1,,,HcOutsideTemp2,Außentemperatur,,,0621,0080004a,,,IGN:8,,,,temp,,SIN,10,°C,
+r1,,,HcFloorTemp,Fußbodenheizung,,,0621,0082004a,,,IGN:8,,,,temp,,SIN,10,°C,
