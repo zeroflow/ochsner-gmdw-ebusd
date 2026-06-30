@@ -21,10 +21,14 @@
 #   Utility meters get sensor.<key> (the key under utility_meter:), e.g.
 #     sensor.wp_heizenergie_monatlich. Verify in Developer Tools → States.
 #
-# PREREQ ebusd source entities (appear after first poll, ~13 min for r9 energy):
-#   sensor.heating_ebusd_22102_hpheatmwh / _hpheatkwh
-#   sensor.heating_ebusd_22102_hpcoolmwh / _hpcoolkwh
-#   sensor.heating_ebusd_22102_hphwcmwh  / _hphwckwh
+# PREREQ ebusd source entities (appear after first poll, ~13 min for r9 energy).
+#   NOTE: these ids are name-based (slug of the CSV comment) AND sticky in HA's
+#   registry, so they are NOT consistent — Heizung kept an old English-comment id
+#   while Kühl/WW follow the German comment. The actual ids on THIS HA are:
+#   sensor.heating_ebusd_22102_hpheatmwh              / _hpheatkwh
+#   sensor.heating_ebusd_22102_kuhlenergie_mwh        / _kuhlenergie_kwh
+#   sensor.heating_ebusd_22102_warmwasserenergie_mwh  / _warmwasserenergie_kwh
+#   Always verify in Developer Tools → States before trusting these.
 # and the physical electricity meter:  sensor.zahlerstand_warmepumpe
 #
 # IMPORT (HA "packages"): copy to /config/packages/ebusd_energy.yaml, keep the
@@ -47,8 +51,8 @@ template:
           {{ has_value('sensor.heating_ebusd_22102_hpheatmwh')
              and has_value('sensor.heating_ebusd_22102_hpheatkwh') }}
         state: >
-          {{ states('sensor.heating_ebusd_22102_hpheatmwh') | float * 1000.0
-             + states('sensor.heating_ebusd_22102_hpheatkwh') | float }}
+          {{ states('sensor.heating_ebusd_22102_hpheatmwh') | float(0) * 1000.0
+             + states('sensor.heating_ebusd_22102_hpheatkwh') | float(0) }}
 
       - name: "WP Kühlenergie"
         unique_id: wp_kuehlenergie_kwh
@@ -56,11 +60,11 @@ template:
         device_class: energy
         state_class: total_increasing
         availability: >
-          {{ has_value('sensor.heating_ebusd_22102_hpcoolmwh')
-             and has_value('sensor.heating_ebusd_22102_hpcoolkwh') }}
+          {{ has_value('sensor.heating_ebusd_22102_kuhlenergie_mwh')
+             and has_value('sensor.heating_ebusd_22102_kuhlenergie_kwh') }}
         state: >
-          {{ states('sensor.heating_ebusd_22102_hpcoolmwh') | float * 1000.0
-             + states('sensor.heating_ebusd_22102_hpcoolkwh') | float }}
+          {{ states('sensor.heating_ebusd_22102_kuhlenergie_mwh') | float(0) * 1000.0
+             + states('sensor.heating_ebusd_22102_kuhlenergie_kwh') | float(0) }}
 
       - name: "WP Warmwasserenergie"
         unique_id: wp_warmwasserenergie_kwh
@@ -68,11 +72,11 @@ template:
         device_class: energy
         state_class: total_increasing
         availability: >
-          {{ has_value('sensor.heating_ebusd_22102_hphwcmwh')
-             and has_value('sensor.heating_ebusd_22102_hphwckwh') }}
+          {{ has_value('sensor.heating_ebusd_22102_warmwasserenergie_mwh')
+             and has_value('sensor.heating_ebusd_22102_warmwasserenergie_kwh') }}
         state: >
-          {{ states('sensor.heating_ebusd_22102_hphwcmwh') | float * 1000.0
-             + states('sensor.heating_ebusd_22102_hphwckwh') | float }}
+          {{ states('sensor.heating_ebusd_22102_warmwasserenergie_mwh') | float(0) * 1000.0
+             + states('sensor.heating_ebusd_22102_warmwasserenergie_kwh') | float(0) }}
 
       # Grand total of delivered heat across all three modes.
       - name: "WP Wärmemenge gesamt"
