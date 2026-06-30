@@ -9,6 +9,26 @@ The decoding is driven as an agent workflow (Claude Code), but the **outputs are
 files** anyone can reuse: a working ebusd CSV, a Home-Assistant MQTT mapping, and notes
 on how TEM's memory-addressing scheme was decoded.
 
+> **Disclaimer — this is my concrete setup shown as a template, not a generic distribution.**
+> It documents one specific installation (my hardware, my LAN IPs, my Proxmox/HA layout, my
+> way of working). It is not meant to be a turnkey, plug-and-play config. Hardcoded IPs,
+> the agent workflow, paths and conventions reflect *my* environment — read it as a worked
+> example to adapt, not a product to install as-is. No warranty; you are responsible for
+> anything you send to your own heat pump.
+
+## Setup (this installation)
+
+- **eBUS adapter: [eBUS Adapter Shield v5 "C6"](https://adapter.ebusd.eu/v5-c6/).** A
+  networked (WiFi/Ethernet) adapter that bridges the heat pump's eBUS onto TCP — no USB or
+  serial on the host. ebusd reaches it over the LAN: in `--device=ens:192.168.5.36:9999`,
+  `ens` selects the *enhanced, high-speed* protocol the C6 speaks and `:9999` is the port it
+  exposes. (`192.168.5.36` is the adapter's address on my network — yours will differ.)
+- **ebusd host: a Proxmox LXC container.** ebusd 25.1 runs as a systemd service inside an
+  unprivileged **Proxmox VE LXC** (Debian); options live in `/etc/default/ebusd`. Because the
+  C6 is network-attached, the container needs **no device passthrough** — only network access
+  to the adapter's IP. ebusd's `--mqttint` then bridges the messages to a separate Home
+  Assistant instance over MQTT.
+
 ## What's here
 
 ```
