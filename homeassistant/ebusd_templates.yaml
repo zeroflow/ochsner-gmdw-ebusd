@@ -9,12 +9,16 @@
 # Entity-id scheme (what THIS HA actually generates):
 #     <domain>.<area>_<device-name>_<slug(message-comment)>   (lowercased)
 #   i.e.  slug( "Heating" + "ebusd 22102" + <comment> )
-#   e.g.  number.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen   (setter, comment "Kühlgrenze Sollwert Kühlen")
-#         sensor.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen   (getter, comment "Kühlgrenze (Sollwert Kühlen)")
-#   NOTE: ebusd DOES publish "object_id" for clean ids, but this HA ignores it (the
-#   registry entries are sticky from before the pin / area is folded into the id), so
-#   the live ids are name-based as above. Verify a new entity's real id in
-#   Developer Tools → States before referencing it. See CLAUDE.md "HA entity-id".
+#   NOTE: ebusd publishes "object_id" for clean ids, but this HA ignores it (sticky
+#   registry / area folded into the id), so the live ids are name-based as above.
+#   Verify a new entity's real id in Developer Tools → States. See CLAUDE.md.
+#
+# Device binding: a YAML state-based template entity CANNOT be bound to a device
+# (`device_id` is rejected by the template schema). After import, assign each entity
+# to the "Heating" area in the UI (Settings → Entities → entity → Area), or recreate
+# it as a UI Template helper if you truly need it under the device. The raw ebusd
+# setters/getters DO sit on the "ebusd 22102" device (setters in the Configuration
+# section via entity_category=config in mqtt-hassio.cfg).
 #
 # IMPORT (HA "packages" — keeps this file self-contained, scales to many files)
 #   1. configuration.yaml, once:
@@ -23,7 +27,6 @@
 #   2. copy this file to  /config/packages/ebusd_templates.yaml  (as-is, `template:` stays).
 #   3. Developer Tools → YAML → Check config → then Reload "Template entities"
 #      (or restart HA the first time, since the packages: line is new).
-#   New domains (sensor:, automation:, …) for the same datapoint can go in THIS file.
 #
 #   (Note: NOT `template: !include this_file` — that double-nests the `template:` key
 #    below and fails. Packages is the include path that keeps the top-level key.)
@@ -36,13 +39,6 @@ template:
       # --- Kühlgrenze / Sollwert Kühlen -------------------------------------
       - name: "Kühlgrenze Sollwert Kühlen"
         unique_id: ebus_22102_kuehlgrenze_combined
-        # Attach this template entity to the ebusd "ebusd 22102" device (template
-        # helpers are device-less by default). device_id is INSTANCE-SPECIFIC — look
-        # it up once: HA → Settings → Devices → "ebusd 22102"; the URL ends in
-        # /config/devices/device/<device_id>. Paste that 32-char id below. It stays
-        # stable as long as that MQTT device isn't deleted (clearing entity discovery
-        # does NOT delete the device). Uncomment + paste the id to attach:
-        #device_id: 0123456789abcdef0123456789abcdef
         state: "{{ states('sensor.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen') }}"
         availability: "{{ has_value('sensor.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen') }}"
         min: 15
@@ -57,5 +53,40 @@ template:
             data:
               value: "{{ value }}"
 
+      # --- Raumtemperatur Kühlmodus Tag ------------------------------------
+      - name: "Raumtemperatur Kühlmodus Tag"
+        unique_id: ebus_22102_kuehlraumtag_combined
+        state: "{{ states('sensor.heating_ebusd_22102_raumtemperatur_kuhlmodus_tag') }}"
+        availability: "{{ has_value('sensor.heating_ebusd_22102_raumtemperatur_kuhlmodus_tag') }}"
+        min: 18
+        max: 30          # TODO verify against the cellar-display UI range
+        step: 0.5
+        unit_of_measurement: "°C"
+        device_class: temperature
+        set_value:
+          - action: number.set_value
+            target:
+              entity_id: number.heating_ebusd_22102_raumtemperatur_kuhlmodus_tag
+            data:
+              value: "{{ value }}"
+
+      # --- Raumtemperatur Kühlmodus Nacht ----------------------------------
+      - name: "Raumtemperatur Kühlmodus Nacht"
+        unique_id: ebus_22102_kuehlraumnacht_combined
+        state: "{{ states('sensor.heating_ebusd_22102_raumtemperatur_kuhlmodus_nacht') }}"
+        availability: "{{ has_value('sensor.heating_ebusd_22102_raumtemperatur_kuhlmodus_nacht') }}"
+        min: 18
+        max: 30          # TODO verify against the cellar-display UI range
+        step: 0.5
+        unit_of_measurement: "°C"
+        device_class: temperature
+        set_value:
+          - action: number.set_value
+            target:
+              entity_id: number.heating_ebusd_22102_raumtemperatur_kuhlmodus_nacht
+            data:
+              value: "{{ value }}"
+
       # --- next pair goes here ----------------------------------------------
-      # Copy the block above, swap the sensor/number entity-ids and min/max.
+      # Copy a block above, swap the sensor/number entity-ids (slug of the CSV
+      # comment — verify in Developer Tools → States) and min/max.
