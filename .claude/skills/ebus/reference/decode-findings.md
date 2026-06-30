@@ -97,3 +97,16 @@ explicit circuit `22102`, bare value).
 - **The SIN divisor is per-datapoint, not global.** Kühlgrenze = SIN÷2 (0.5° steps); these room
   temps = SIN÷10 (0.1°). Verify the divisor against the known old/new raw bytes in the grab
   (e.g. 25.0 → `fa00`=250 ⇒ ÷10) — never carry over the previous datapoint's divisor.
+
+## Mittelwert Außentemperatur — decoded, verified (2026-06-30)
+- `At_mittel` (TEM `.tsp`, Hk_stat, DP 02-020, "Berechneter Aussentemperatur Mittelwert") — the
+  damped outside temp used for the heating curve / Heiz-/Kühlgrenze. Added as **`HcOutsideTempAvg`**,
+  `r3,…,0621,7782000a,…,IGN:8,…,SIN,10,°C`. Live read **34.3** = cellar-display "Mittelwert
+  Aussentemperatur 34.3" ✓.
+- **Selector pitfall:** the public CSV / first guess used `77820008` (selector `0008`) → read `0.0`
+  (dead datapoint). The DISPLAY actually polls the heat-circuit live block with selector **`000a`**:
+  `01 15 0621 04 7782000a → …5701`=343=34.3. So the addr byte (`7782`) was right but the selector
+  was wrong. Always grab the display's own read and copy ITS full 4-byte ID — don't trust the
+  upstream selector. Block `7780..7787` / `000a` seen in one menu navigation:
+  `7781`=39.5 (momentary AT, mirrors HcOutsideTemp), `7782`=34.3 (Mittelwert), `7783`=27.3,
+  `7784`=24.0, `7785/86`=21.3 — a cluster of heat-circuit temps.
