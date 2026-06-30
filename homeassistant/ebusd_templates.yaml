@@ -11,12 +11,17 @@
 #   e.g.  number.ebusd_22102_setkuehlgrenze_temp   (setter)
 #         sensor.ebusd_22102_kuehlgrenze_temp      (getter)
 #
-# IMPORT
-#   configuration.yaml:
-#     template: !include ebusd_templates.yaml      # if you have no other template:
-#   ...or, if `template:` already exists, merge the list below into it, or use:
-#     template: !include_dir_merge_list ha_templates/   # and drop this file in there
-#   Then: Developer Tools → YAML → Check config → Reload "Template entities".
+# IMPORT (HA "packages" — keeps this file self-contained, scales to many files)
+#   1. configuration.yaml, once:
+#        homeassistant:
+#          packages: !include_dir_named packages
+#   2. copy this file to  /config/packages/ebusd_templates.yaml  (as-is, `template:` stays).
+#   3. Developer Tools → YAML → Check config → then Reload "Template entities"
+#      (or restart HA the first time, since the packages: line is new).
+#   New domains (sensor:, automation:, …) for the same datapoint can go in THIS file.
+#
+#   (Note: NOT `template: !include this_file` — that double-nests the `template:` key
+#    below and fails. Packages is the include path that keeps the top-level key.)
 #
 # Prereq: the pinned-id ebusd entities must exist. After enabling object_id you
 # must delete the old MQTT device/entities once in HA so they get re-created with
