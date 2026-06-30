@@ -34,12 +34,12 @@ w,22102,,SetKuehlRaumTag,Raumtemperatur Kühlmodus Tag,,10,0623,03b6004a,temp,,S
 r1,,,KuehlRaumNacht,Raumtemperatur Kühlmodus Nacht,,,0621,03b8004a,,,IGN:8,,,,temp,,SIN,10,°C,
 w,22102,,SetKuehlRaumNacht,Raumtemperatur Kühlmodus Nacht,,10,0623,03b8004a,temp,,SIN,10,°C,
 r1,,,RoomTemp,Raumtemperatur,,,0621,0081004a,,,IGN:8,,,,temp,,SIN,10,°C,
-r1,,,HcPump,Umwälzpumpe Heizung,,,0621,0194004a,,,IGN:8,,,,onoff,,UCH,,,0=off;1=on
+r1,,,HcPump,Umwälzpumpe Heizung,,,0621,0194004a,,,IGN:8,,,,onoff,,UCH,0=off;1=on,,
 r1,,,HcOutsideTemp2,Außentemperatur,,,0621,0080004a,,,IGN:8,,,,temp,,SIN,10,°C,
 r1,,,HcFloorTemp,Fußbodenheizung,,,0621,0082004a,,,IGN:8,,,,temp,,SIN,10,°C,
 r1,,,PufferVorlaufTemp,Puffer Vorlauf (Eintritt),,,0621,00870042,,,IGN:8,,,,temp,,SIN,10,°C,
 r1,,,PufferRuecklaufTemp,Puffer Rücklauf (Austritt),,,0621,00880042,,,IGN:8,,,,temp,,SIN,10,°C,
-r1,,,WwPump,Umwälzpumpe Warmwasser,,,0621,01c2004e,,,IGN:8,,,,onoff,,UCH,,,0=off;1=on
+r1,,,WwPump,Umwälzpumpe Warmwasser,,,0621,01c2004e,,,IGN:8,,,,onoff,,UCH,0=off;1=on,,
 r1,,,HeizRaumTag,Raumtemperatur Heizmodus Tag,,,0621,03b3004a,,,IGN:8,,,,temp,,SIN,10,°C,
 w,22102,,SetHeizRaumTag,Raumtemperatur Heizmodus Tag,,10,0623,03b3004a,temp,,SIN,10,°C,
 r1,,,HeizRaumNacht,Raumtemperatur Heizmodus Nacht,,,0621,03b5004a,,,IGN:8,,,,temp,,SIN,10,°C,
