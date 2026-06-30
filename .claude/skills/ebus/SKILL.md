@@ -15,7 +15,8 @@ System facts live in the project `CLAUDE.md` (device, circuit 22102, addresses, 
 - reads / grab / decode / scanvalue → run freely, no confirmation.
 - config edits (CSV), `reload`, and **live `write` to the bus** → show the user the exact
   change/command and get explicit OK first. It's a running heat pump.
-- every applied config change is git-committed in `/etc/ebusd/config` with a clear message.
+- every applied config change is git-committed in this repo (`ebus.sh commit`) with a clear
+  message; the config lives in `ebusd-config/`, symlinked into `/etc/ebusd`.
 
 ## Workflow: decode a value change → write definition
 
@@ -42,7 +43,7 @@ context. Give it: the snapshot file paths, the old & new value, and these instru
 Show the user the proposed `w` line and the `write` command it enables. Get OK.
 
 ### 4. Apply (dispatch a **modifier subagent**, or do inline if trivial)
-Give it the confirmed `w` line + target file `/etc/ebusd/config/15.22102.csv`:
+Give it the confirmed `w` line + target file `ebusd-config/config/15.22102.csv`:
 - back up / rely on git; append the `w` row (match byte layout exactly — see reference).
 - `ebus.sh reload` (fails loudly on CSV errors), `ebus.sh verify <name>`.
 - `ebus.sh commit "<what changed and why>"`.

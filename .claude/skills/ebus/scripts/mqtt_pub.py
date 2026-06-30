@@ -2,9 +2,11 @@
 # Minimal MQTT 3.1.1 publisher (pure socket). Publishes an EMPTY RETAINED payload
 # to each topic given as argv -> clears a retained message (e.g. removes an HA
 # discovery config so HA deletes the entity).
-import socket, sys, struct
+import socket, sys, struct, os
 
-HOST = "192.168.4.11"; PORT = 1883
+# Broker defaults to the author's LAN; override via env for other setups.
+HOST = os.environ.get("EBUSD_MQTT_HOST", "192.168.4.11")
+PORT = int(os.environ.get("EBUSD_MQTT_PORT", "1883"))
 topics = sys.argv[1:]
 if not topics:
     print("usage: mqtt_pub.py <topic> [<topic> ...]  (publishes empty retained payload)"); sys.exit(2)

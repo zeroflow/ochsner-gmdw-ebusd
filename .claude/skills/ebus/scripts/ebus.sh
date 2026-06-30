@@ -6,12 +6,12 @@
 # Config via env (defaults shown):
 #   EBUSCTL   = ebusctl
 #   EBUS_HOST = (local socket; ebusctl default)   set to talk to remote
-#   CONFIG_DIR = /etc/ebusd  (git repo root: tracks config/*.csv + the .cfg files)
+#   CONFIG_DIR = /home/thomas/claude  (this repo; ebusd-config/ is symlinked into /etc/ebusd)
 #   REC_DIR    = /home/thomas/claude/recordings
 set -euo pipefail
 
 EBUSCTL="${EBUSCTL:-ebusctl}"
-CONFIG_DIR="${CONFIG_DIR:-/etc/ebusd}"
+CONFIG_DIR="${CONFIG_DIR:-/home/thomas/claude}"
 REC_DIR="${REC_DIR:-/home/thomas/claude/recordings}"
 
 ctl() { $EBUSCTL "$@"; }
@@ -142,7 +142,7 @@ case "$cmd" in
     git -C "$CONFIG_DIR" commit -m "$*" && echo ">>> committed in $CONFIG_DIR"
     ;;
 
-  diffcfg) git -C "$CONFIG_DIR" --no-pager diff ;;
+  diffcfg) git -C "$CONFIG_DIR" --no-pager diff -- ebusd-config ;;
 
   ""|-h|--help|help) usage ;;
   *) echo "unknown command: $cmd" >&2; usage; exit 2 ;;

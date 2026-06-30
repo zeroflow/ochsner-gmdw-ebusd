@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # Minimal read-only MQTT 3.1.1 subscriber (pure socket, no deps).
 # Connects, subscribes to a topic filter, prints RETAINED messages, exits after idle.
-import socket, sys, struct, time
+import socket, sys, struct, time, os
 
-HOST = "192.168.4.11"; PORT = 1883
+# Broker defaults to the author's LAN; override via env for other setups.
+HOST = os.environ.get("EBUSD_MQTT_HOST", "192.168.4.11")
+PORT = int(os.environ.get("EBUSD_MQTT_PORT", "1883"))
 TOPIC = sys.argv[1] if len(sys.argv) > 1 else "homeassistant/#"
 IDLE = float(sys.argv[2]) if len(sys.argv) > 2 else 4.0
 

@@ -15,15 +15,24 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
 - **reads / grab / decode / scanvalue**: run freely.
 - **config edits, `reload`, and live `write` to the bus**: show the exact change/command and
   get explicit user OK first. This controls a real, running heat pump.
-- Every applied config change is git-committed in `/etc/ebusd/config`.
+- Every applied config change is git-committed in this repo (`/home/thomas/claude`) via
+  `ebus.sh commit` — the files live in `ebusd-config/`, symlinked into `/etc/ebusd`.
 
 ## Git / tracking
-- `/etc/ebusd` — git repo (root), the **config history** (rollback-ready). Tracks
-  `config/15.22102.csv` **and** the `.cfg` files (`mqtt-hassio.cfg`, `mqtt-integration.cfg`,
-  `knx.cfg`). Commit on every applied change via `ebus.sh commit "<msg>"`. Operated as
-  `thomas` on a root-owned dir → added to git `safe.directory`.
-- `/home/thomas/claude` — git repo, the **tooling + notes** (CLAUDE.md, the `ebus` skill,
-  decode-session notes). `recordings/` (raw grab snapshots) is gitignored.
+- **Single repo: `/home/thomas/claude`** — tooling + notes (CLAUDE.md, the `ebus` skill,
+  decode notes) **and** the live config under `ebusd-config/` (`config/15.22102.csv`,
+  `mqtt-hassio.cfg`). This is the publishable repo and the single source of truth.
+  `recordings/` (raw grab snapshots) is gitignored. `ebus.sh commit "<msg>"` commits here
+  (`CONFIG_DIR=/home/thomas/claude`).
+- **The live config is symlinked into `/etc/ebusd`** so ebusd reads it through the repo:
+  `/etc/ebusd/config/15.22102.csv` → `ebusd-config/config/15.22102.csv` and
+  `/etc/ebusd/mqtt-hassio.cfg` → `ebusd-config/mqtt-hassio.cfg`. ebusd runs as **root** with
+  `ProtectHome=no`, so following the symlinks into `/home/thomas` is fine. Edit the files in
+  the repo, then `ebusctl reload` (CSV) / `sudo systemctl restart ebusd` (mqtt-hassio.cfg).
+- `/etc/ebusd/.git` is the **retired** old config history (archive only, pre-2026-06-30 move);
+  its `15.22102.csv`/`mqtt-hassio.cfg` are now symlinks. Don't commit there anymore. The two
+  stock cfgs (`knx.cfg`, `mqtt-integration.cfg`) are unused (not on the ebusd command line)
+  and were intentionally left out of the published repo.
 
 ## System facts (verified 2026-06-29)
 - ebusd **25.1**, systemd service `ebusd.service`, options in `/etc/default/ebusd`.
@@ -32,7 +41,8 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
 - `ebusctl` on `localhost:8888`.
 - Manufacturer **TEM**. Slaves seen: `15` (=circuit **22102**, the main controller),
   `08`/`18` (WE_1/WE_2 = Wärmeerzeuger), `06`. ebusd's own address: master `31` / slave `36`.
-- **Active config: only `/etc/ebusd/config/15.22102.csv`** (custom, not from the public repo).
+- **Active config: only `ebusd-config/config/15.22102.csv`** (custom, not from the public repo;
+  symlinked to `/etc/ebusd/config/15.22102.csv`).
   After cleanup (2026-06-29): **30 `r1` (polled) read messages + the first `w` (write)**. Each read
   row skips the 8-byte TEM metadata block via `IGN:8` and exposes one value field. All reads are
   `r1` so ebusd polls them (~2.5 min cycle) → HA stays current.
