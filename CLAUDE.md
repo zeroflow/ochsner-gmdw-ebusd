@@ -88,8 +88,17 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   `number.ebusd_22102_setkuehlgrenze_temp` (setter) and `sensor.ebusd_22102_kuehlgrenze_temp`
   (getter). This is what the repo's `homeassistant/` templates reference.
   - **`object_id` only takes effect at FIRST discovery of a unique_id.** Entities already in HA's
-    registry keep their old name-based id. To migrate: delete the MQTT device (or the affected
-    entities) in HA → `systemctl restart ebusd` → they reappear with the pinned id.
+    registry keep their old name-based id. Clearing the retained discovery alone does NOT help:
+    HA keeps the registry entry (keyed by unique_id) and *restores the old entity_id* when the
+    same unique_id reappears. You must drop the **registry entry**, which is an HA-side action.
+  - **Correct reset to migrate ids (verified 2026-06-30):** delete the **device** "ebusd 22102"
+    in HA UI (Settings → Devices). HA itself then publishes empty retained payloads to ALL its
+    discovery topics (broker + registry both clean). Then `systemctl restart ebusd` → write/number
+    entities republish immediately, read sensors over the next poll cycle (~2.5 min) — all created
+    fresh, so `object_id` applies and ids become `ebusd_<circuit>_<msg>_<field>`. The HA **device_id**
+    changes on this recreation → re-grab it for the `homeassistant/` templates.
+    (Per-entity instead of whole-device: `mqtt_pub.py <config-topic>` clears one retained discovery,
+    but you still must delete that entity in HA to drop its registry entry before republishing.)
 
 ## Home Assistant config (`homeassistant/` in this repo)
 - Publishable HA YAML the user pulls into their HA box. `ebusd_templates.yaml` = one
