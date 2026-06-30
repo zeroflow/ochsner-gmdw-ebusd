@@ -43,9 +43,18 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   `08`/`18` (WE_1/WE_2 = Wärmeerzeuger), `06`. ebusd's own address: master `31` / slave `36`.
 - **Active config: only `ebusd-config/config/15.22102.csv`** (custom, not from the public repo;
   symlinked to `/etc/ebusd/config/15.22102.csv`).
-  After cleanup (2026-06-29): **30 `r1` (polled) read messages + the first `w` (write)**. Each read
-  row skips the 8-byte TEM metadata block via `IGN:8` and exposes one value field. All reads are
-  `r1` so ebusd polls them (~2.5 min cycle) → HA stays current.
+  **40 polled read messages + writes.** Each read row skips the 8-byte TEM metadata block via
+  `IGN:8` and exposes one value field.
+  - **Poll-Prioritäten (Spalte 1, `rN`) statt überall `r1` (2026-06-30).** Die Ziffer ist eine
+    *Priorität*, kein Intervall: ebusd pollt alle `--pollinterval` s (Default **5 s**) genau **eine**
+    überfälligste Nachricht, danach `pollOrder += N`. `r1` = häufigste, `r9` = 1/9 so oft. Effektive
+    Periode ≈ `pollinterval × N × Σ(1/Nⱼ)`. Tiers hier: **Live r1** (10: FlowTemp, Status, HwcStatus,
+    HpStatus, HpFlowTemp, DesiredHpFlow, HpReturnTemp, HpCycles, HcPump, WwPump), **Diagnose r3** (17),
+    **Sollwerte r6** (7), **Energie r9** (6). Σ(1/N)=17,5 → Live **~88 s**, r3 ~4,4 min, r6 ~8,8 min,
+    r9 ~13 min. Höhere Ziffer bei selten-ändernden DPs macht die r1-Livewerte *schneller* (vorher alle
+    r1 → 200 s). DesiredHpFlow/DesiredStoreFlow sind regler-berechnete Zielwerte (=live), keine Sollwerte.
+  - **Display-Slowness ist NICHT unser Polling**: ebusd ist Master `31` (hohe Adr = niedrige Bus-
+    Priorität), weicht Display(`01`)/Regler(`10`) per Arbitrierung aus; Busauslastung ~3–5 %.
 - **First working write (2026-06-29): `SetKuehlgrenze`** (cooling limit). TEM write pattern:
   **`ZZ=10`, `PBSB=0623`** (write-memory; `10` = controller master-face ≡ slave `15`), bare value
   (no `IGN`). Reads of the same datapoint use `ZZ=15`/`0621`/`IGN:8`. **Write rows need an explicit
