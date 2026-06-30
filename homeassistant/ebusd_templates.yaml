@@ -6,10 +6,15 @@
 #   - writes via                            number.<...>   (setter, → bus)
 # and imposes a SANE min/max (ebusd derives ±16383.5 from the SIN datatype).
 #
-# Entity-id scheme (deterministic, pinned via "object_id" in mqtt-hassio.cfg):
-#     <domain>.ebusd_<circuit>_<MessageName>_<field>   (lowercased)
-#   e.g.  number.ebusd_22102_setkuehlgrenze_temp   (setter)
-#         sensor.ebusd_22102_kuehlgrenze_temp      (getter)
+# Entity-id scheme (what THIS HA actually generates):
+#     <domain>.<area>_<device-name>_<slug(message-comment)>   (lowercased)
+#   i.e.  slug( "Heating" + "ebusd 22102" + <comment> )
+#   e.g.  number.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen   (setter, comment "Kühlgrenze Sollwert Kühlen")
+#         sensor.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen   (getter, comment "Kühlgrenze (Sollwert Kühlen)")
+#   NOTE: ebusd DOES publish "object_id" for clean ids, but this HA ignores it (the
+#   registry entries are sticky from before the pin / area is folded into the id), so
+#   the live ids are name-based as above. Verify a new entity's real id in
+#   Developer Tools → States before referencing it. See CLAUDE.md "HA entity-id".
 #
 # IMPORT (HA "packages" — keeps this file self-contained, scales to many files)
 #   1. configuration.yaml, once:
@@ -23,9 +28,8 @@
 #   (Note: NOT `template: !include this_file` — that double-nests the `template:` key
 #    below and fails. Packages is the include path that keeps the top-level key.)
 #
-# Prereq: the pinned-id ebusd entities must exist. After enabling object_id you
-# must delete the old MQTT device/entities once in HA so they get re-created with
-# the new ids (see CLAUDE.md "HA entity-id pinning").
+# Prereq: the referenced ebusd sensor/number entities must exist in HA (read sensors
+# appear after their first poll, ~2.5 min). Confirm their real ids in Developer Tools.
 
 template:
   - number:
@@ -39,8 +43,8 @@ template:
         # stable as long as that MQTT device isn't deleted (clearing entity discovery
         # does NOT delete the device). Uncomment + paste the id to attach:
         #device_id: 0123456789abcdef0123456789abcdef
-        state: "{{ states('sensor.ebusd_22102_kuehlgrenze_temp') }}"
-        availability: "{{ has_value('sensor.ebusd_22102_kuehlgrenze_temp') }}"
+        state: "{{ states('sensor.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen') }}"
+        availability: "{{ has_value('sensor.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen') }}"
         min: 15
         max: 40          # matches the cellar-display UI range for this setpoint
         step: 0.5
@@ -49,7 +53,7 @@ template:
         set_value:
           - action: number.set_value
             target:
-              entity_id: number.ebusd_22102_setkuehlgrenze_temp
+              entity_id: number.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen
             data:
               value: "{{ value }}"
 

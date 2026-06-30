@@ -80,32 +80,31 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
     `mqtt_dump.py 'ebusd/#' 2 '<name>'`; don't diagnose "HA broken" from a `read -f` value.
     Write/`number` entities publish discovery immediately on restart (before any data) — which
     is why you can see the setpoints but not yet the reads right after a restart.
-- **HA entity-id pinning (set 2026-06-30): `object_id` is emitted in `definition-payload`**
-  (`"object_id":"%{TOPIC}_%FIELD"`). Without it HA derives the entity_id from the *comment*
-  (`slugify(device-name + name)`) → fragile (changes if you edit the CSV comment, `_2` on
-  collision). With it the entity_id is **deterministic from circuit+message+field**:
-  `<domain>.ebusd_<circuit>_<MessageName>_<field>` lowercased, e.g.
-  `number.ebusd_22102_setkuehlgrenze_temp` (setter) and `sensor.ebusd_22102_kuehlgrenze_temp`
-  (getter). This is what the repo's `homeassistant/` templates reference.
-  - **`object_id` only takes effect at FIRST discovery of a unique_id.** Entities already in HA's
-    registry keep their old name-based id. Clearing the retained discovery alone does NOT help:
-    HA keeps the registry entry (keyed by unique_id) and *restores the old entity_id* when the
-    same unique_id reappears. You must drop the **registry entry**, which is an HA-side action.
-  - **Correct reset to migrate ids (verified 2026-06-30):** delete the **device** "ebusd 22102"
-    in HA UI (Settings → Devices). HA itself then publishes empty retained payloads to ALL its
-    discovery topics (broker + registry both clean). Then `systemctl restart ebusd` → write/number
-    entities republish immediately, read sensors over the next poll cycle (~2.5 min) — all created
-    fresh, so `object_id` applies and ids become `ebusd_<circuit>_<msg>_<field>`. The HA **device_id**
-    changes on this recreation → re-grab it for the `homeassistant/` templates.
-    (Per-entity instead of whole-device: `mqtt_pub.py <config-topic>` clears one retained discovery,
-    but you still must delete that entity in HA to drop its registry entry before republishing.)
+- **HA entity-id scheme — name-based, NOT object_id (settled 2026-06-30 after testing).**
+  ebusd *does* emit `"object_id":"%{TOPIC}_%FIELD"` in `definition-payload` (kept; it would give
+  clean ids on a truly fresh HA), **but this HA ignores it.** The live entity_id is:
+  `<domain>.<area>_<device-name>_<slug(message-comment)>` lowercased, i.e.
+  `slugify("Heating" + "ebusd 22102" + <comment>)`, e.g.
+  `number.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen` (setter, comment "Kühlgrenze Sollwert
+  Kühlen") and `sensor.heating_ebusd_22102_kuhlgrenze_sollwert_kuhlen` (getter, comment
+  "Kühlgrenze (Sollwert Kühlen)"). Setter/getter share the slug but differ by domain → no clash.
+  **This name-based id is what the repo's `homeassistant/` templates reference.** It is stable
+  (sticky in HA's registry) as long as the area, device name, and CSV comment don't change.
+  - **Why object_id didn't win:** it only applies at the *first* discovery of a unique_id when no
+    registry entry exists. These entities were created long before the pin, and the registry entry
+    (keyed by unique_id) is **sticky** — HA restores the old entity_id on every rediscovery.
+    Clearing retained discovery and even "delete device" in the UI did **not** purge the registry
+    entry here (it came back name-based). So: don't fight it — reference the name-based ids.
+  - To verify any new entity's real id: Developer Tools → States (don't assume the object_id form).
+  - Tooling for a clean slate if ever needed: `mqtt_pub.py <config-topic>` clears one retained
+    discovery; `systemctl restart ebusd` republishes (writes immediately, reads after ~2.5 min poll).
 
 ## Home Assistant config (`homeassistant/` in this repo)
 - Publishable HA YAML the user pulls into their HA box. `ebusd_templates.yaml` = one
   `template number` per writable datapoint, wrapping the ebusd getter `sensor.…` + setter
   `number.…` into a single entity with sane min/max (ebusd's own min/max is ±16383.5 from SIN).
-  Import via `template: !include ebusd_templates.yaml` (header documents the merge variants).
-  Add a new block here whenever a new write datapoint is decoded + pinned.
+  Import via HA "packages" (header documents the exact include). Add a new block here whenever a
+  new write datapoint is decoded; reference the live name-based ids (see "HA entity-id scheme").
 
 ## Heat pump (the device behind circuit 22102)
 - **Ochsner GMDW 11 HK plus** (Baureihe *Golf Midi Plus*, Best.-Nr. 274600). TEM controller,
