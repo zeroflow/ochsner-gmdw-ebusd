@@ -1,0 +1,149 @@
+# ebusd ↔ Home Assistant: heat-pump energy (Wärmemenge) + COP/JAZ
+# ================================================================
+# The TEM controller splits each lifetime energy counter into a MWh field (÷1)
+# and a kWh remainder (÷10, always < 1000). This package:
+#   1. recombines each into ONE kWh total sensor (Heiz / Kühl / WW),
+#   2. builds a grand total + a kWh-normalized electricity meter,
+#   3. meters daily/monthly consumption via Utility Meter,
+#   4. derives a rolling COP = delivered heat / electricity per period.
+#
+# WHAT THESE COUNTERS ARE: delivered HEAT (thermische Wärmemenge), NOT electricity.
+#   Proven 2026-06-30 against the physical WP meter (21.58 MWh electric vs 186 MWh
+#   internal → ratio 8.6, impossible as electricity). See findings.md.
+#
+# ENTITY IDs: unlike the ebusd MQTT-discovery entities, these are plain
+#   template/utility_meter entities, so their id is simply slugify(name):
+#     "WP Heizenergie"        -> sensor.wp_heizenergie
+#     "WP Kühlenergie"        -> sensor.wp_kuhlenergie     (ü -> u)
+#     "WP Warmwasserenergie"  -> sensor.wp_warmwasserenergie
+#     "WP Wärmemenge gesamt"  -> sensor.wp_warmemenge_gesamt
+#     "WP Strom"              -> sensor.wp_strom
+#   Utility meters get sensor.<key> (the key under utility_meter:), e.g.
+#     sensor.wp_heizenergie_monatlich. Verify in Developer Tools → States.
+#
+# PREREQ ebusd source entities (appear after first poll, ~13 min for r9 energy):
+#   sensor.heating_ebusd_22102_hpheatmwh / _hpheatkwh
+#   sensor.heating_ebusd_22102_hpcoolmwh / _hpcoolkwh
+#   sensor.heating_ebusd_22102_hphwcmwh  / _hphwckwh
+# and the physical electricity meter:  sensor.zahlerstand_warmepumpe
+#
+# IMPORT (HA "packages"): copy to /config/packages/ebusd_energy.yaml, keep the
+#   top-level keys as-is. configuration.yaml once:
+#     homeassistant:
+#       packages: !include_dir_named packages
+#   Then Developer Tools → YAML → Check config → restart (first time; new domains).
+
+template:
+  # -------------------------------------------------------------------------
+  # 1) Combined kWh totals (recombine MWh*1000 + kWh) + normalized electricity
+  # -------------------------------------------------------------------------
+  - sensor:
+      - name: "WP Heizenergie"
+        unique_id: wp_heizenergie_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        availability: >
+          {{ has_value('sensor.heating_ebusd_22102_hpheatmwh')
+             and has_value('sensor.heating_ebusd_22102_hpheatkwh') }}
+        state: >
+          {{ states('sensor.heating_ebusd_22102_hpheatmwh') | float * 1000.0
+             + states('sensor.heating_ebusd_22102_hpheatkwh') | float }}
+
+      - name: "WP Kühlenergie"
+        unique_id: wp_kuehlenergie_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        availability: >
+          {{ has_value('sensor.heating_ebusd_22102_hpcoolmwh')
+             and has_value('sensor.heating_ebusd_22102_hpcoolkwh') }}
+        state: >
+          {{ states('sensor.heating_ebusd_22102_hpcoolmwh') | float * 1000.0
+             + states('sensor.heating_ebusd_22102_hpcoolkwh') | float }}
+
+      - name: "WP Warmwasserenergie"
+        unique_id: wp_warmwasserenergie_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        availability: >
+          {{ has_value('sensor.heating_ebusd_22102_hphwcmwh')
+             and has_value('sensor.heating_ebusd_22102_hphwckwh') }}
+        state: >
+          {{ states('sensor.heating_ebusd_22102_hphwcmwh') | float * 1000.0
+             + states('sensor.heating_ebusd_22102_hphwckwh') | float }}
+
+      # Grand total of delivered heat across all three modes.
+      - name: "WP Wärmemenge gesamt"
+        unique_id: wp_waermemenge_gesamt_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        availability: >
+          {{ has_value('sensor.wp_heizenergie')
+             and has_value('sensor.wp_kuhlenergie')
+             and has_value('sensor.wp_warmwasserenergie') }}
+        state: >
+          {{ states('sensor.wp_heizenergie') | float(0)
+             + states('sensor.wp_kuhlenergie') | float(0)
+             + states('sensor.wp_warmwasserenergie') | float(0) }}
+
+      # Electricity meter normalized to kWh (display showed Wh; divide only if Wh).
+      - name: "WP Strom"
+        unique_id: wp_strom_kwh
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        availability: "{{ has_value('sensor.zahlerstand_warmepumpe') }}"
+        state: >
+          {% set v = states('sensor.zahlerstand_warmepumpe') | float(0) %}
+          {% set u = state_attr('sensor.zahlerstand_warmepumpe', 'unit_of_measurement') | string %}
+          {{ (v / 1000.0) if u in ['Wh', 'wh'] else v }}
+
+  # -------------------------------------------------------------------------
+  # 3) COP per period = delivered heat / electricity (same cycle → matched window)
+  #    NOTE: "gesamt" includes cooling. In cooling season this blends the cooling
+  #    EER into the figure. For a pure heating JAZ use (Heiz+WW) only — swap the
+  #    numerator to wp_heizenergie_* + wp_warmwasser_* once we settle the definition.
+  # -------------------------------------------------------------------------
+  - sensor:
+      - name: "WP COP heute"
+        unique_id: wp_cop_taeglich
+        state_class: measurement
+        icon: mdi:heat-pump
+        availability: >
+          {{ has_value('sensor.wp_waerme_gesamt_taeglich')
+             and (states('sensor.wp_strom_taeglich') | float(0)) > 0.1 }}
+        state: >
+          {{ (states('sensor.wp_waerme_gesamt_taeglich') | float(0)
+              / states('sensor.wp_strom_taeglich') | float(1)) | round(2) }}
+
+      - name: "WP COP Monat"
+        unique_id: wp_cop_monatlich
+        state_class: measurement
+        icon: mdi:heat-pump
+        availability: >
+          {{ has_value('sensor.wp_waerme_gesamt_monatlich')
+             and (states('sensor.wp_strom_monatlich') | float(0)) > 0.1 }}
+        state: >
+          {{ (states('sensor.wp_waerme_gesamt_monatlich') | float(0)
+              / states('sensor.wp_strom_monatlich') | float(1)) | round(2) }}
+
+# ---------------------------------------------------------------------------
+# 2) Period consumption via Utility Meter (calendar day + month, persistent)
+#    Replaces hand-rolled -24h / -7d diff helpers. last_period attr = last full
+#    cycle. For TRUE rolling 24h instead of calendar day, use a statistics
+#    sensor (state_characteristic: change, max_age) — ask and I'll add it.
+# ---------------------------------------------------------------------------
+utility_meter:
+  wp_heizenergie_taeglich:    { source: sensor.wp_heizenergie,       cycle: daily,   name: "WP Heizenergie täglich" }
+  wp_heizenergie_monatlich:   { source: sensor.wp_heizenergie,       cycle: monthly, name: "WP Heizenergie monatlich" }
+  wp_kuehlenergie_taeglich:   { source: sensor.wp_kuhlenergie,       cycle: daily,   name: "WP Kühlenergie täglich" }
+  wp_kuehlenergie_monatlich:  { source: sensor.wp_kuhlenergie,       cycle: monthly, name: "WP Kühlenergie monatlich" }
+  wp_warmwasser_taeglich:     { source: sensor.wp_warmwasserenergie, cycle: daily,   name: "WP Warmwasserenergie täglich" }
+  wp_warmwasser_monatlich:    { source: sensor.wp_warmwasserenergie, cycle: monthly, name: "WP Warmwasserenergie monatlich" }
+  wp_waerme_gesamt_taeglich:  { source: sensor.wp_warmemenge_gesamt, cycle: daily,   name: "WP Wärmemenge gesamt täglich" }
+  wp_waerme_gesamt_monatlich: { source: sensor.wp_warmemenge_gesamt, cycle: monthly, name: "WP Wärmemenge gesamt monatlich" }
+  wp_strom_taeglich:          { source: sensor.wp_strom,             cycle: daily,   name: "WP Strom täglich" }
+  wp_strom_monatlich:         { source: sensor.wp_strom,             cycle: monthly, name: "WP Strom monatlich" }
