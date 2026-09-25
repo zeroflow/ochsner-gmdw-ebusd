@@ -75,8 +75,8 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
   alle ~1–2 min mit `10 91 100a 02 0005` → Antwort `10 05 <roomtemp SIN÷10> <state UIN, 1> <humidity UIN %>`.
   Passiv mitgelesen als `RoomUnitStatus` (`r`, ungepollt; `91` antwortet uns selbst nicht). Terminal offline
   ⇒ **keine** `10→91`-Telegramme mehr, `91` verschwindet aus `ebusctl info`, WP geht in „Notlauf, reduziert",
-  während `HpMode`/`Status` normal aussehen und der Regler-`RoomTemp` auf dem letzten Wert **einfriert**
-  (Ausfall 22.–25.09.: 23,6 eingefroren, real 21,9). ⇒ Notlauf-Erkennung = RoomUnitStatus-Update-Alter.
+  während `HpMode`/`Status` normal aussehen. Ob der Regler-`RoomTemp` dabei einfriert, ist **nicht** verifiziert.
+  ⇒ Notlauf-Erkennung = RoomUnitStatus-Update-Alter (> ~5 min ohne Update).
   **Kein** Status im Broadcast `10 fe 100a`: dessen 2. Byte ist nur ein Satzindex 00–03 (Grab zeigt je Key nur
   den zuletzt gesehenen Satz — nicht als Zustand fehlinterpretieren).
 - **Passwordless sudo is available** for `thomas` (`/etc/sudoers.d/`), so I can
