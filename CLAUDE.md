@@ -53,6 +53,15 @@ read/write definitions. Primary workflow lives in the `ebus` skill (`.claude/ski
     **Sollwerte r6** (7), **Energie r9** (6). Σ(1/N)=17,5 → Live **~88 s**, r3 ~4,4 min, r6 ~8,8 min,
     r9 ~13 min. Höhere Ziffer bei selten-ändernden DPs macht die r1-Livewerte *schneller* (vorher alle
     r1 → 200 s). DesiredHpFlow/DesiredStoreFlow sind regler-berechnete Zielwerte (=live), keine Sollwerte.
+  - **Gemessen 2026-09-25 (45 min MQTT-Timing):** r1 Median 61 s, aber Lücken bis ~430 s (Slots gehen an
+    fällige r3/r6/r9); r3 ~365 s (max ~730); **r6 und r9 praktisch gleich** ~540 s (max ~1180) — die
+    Rechenformel oben stimmt nur grob. `RoomUnitStatus` (passiv) exakt 60 s.
+  - **Passiv statt gepollt: `FlowTemp`, `OutsideTemp`, `WaterTemp`, `HpMode` sind `r` (ungepollt)** — das
+    Kellerdisplay (`01`) liest genau diese vier alle ~5 s, ebusd übernimmt die Antworten passiv. Display aus
+    ⇒ diese vier bekommen keine Updates mehr (→ werden in HA nach `expire_after` `unavailable`).
+  - **HA `expire_after = 3600`** für alle lesenden Entities (sensor/sensorlist/binary_sensor via
+    `%expire_after` in `mqtt-hassio.cfg`; nicht für number/switch/select). Pro Tier geht nicht sauber
+    (`%priority` existiert, aber kein Mapping-Mechanismus). Kein Update 1 h ⇒ `unavailable`.
   - **Display-Slowness ist NICHT unser Polling**: ebusd ist Master `31` (hohe Adr = niedrige Bus-
     Priorität), weicht Display(`01`)/Regler(`10`) per Arbitrierung aus; Busauslastung ~3–5 %.
 - **First working write (2026-06-29): `SetKuehlgrenze`** (cooling limit). TEM write pattern:
