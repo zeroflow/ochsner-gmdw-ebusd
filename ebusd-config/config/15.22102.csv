@@ -48,3 +48,4 @@ r6,,,HeizRaumNacht,Raumtemperatur Heizmodus Nacht,,,0621,03b5004a,,,IGN:8,,,,tem
 w,22102,,SetHeizRaumNacht,Raumtemperatur Heizmodus Nacht,,10,0623,03b5004a,temp,,SIN,10,°C,
 r6,,,Heizgrenze,Heizgrenze (Sollwert Heizen),,,0621,0395004a,,,IGN:8,,,,temp,,SIN,10,°C,
 w,22102,,SetHeizgrenze,Heizgrenze Sollwert Heizen,,10,0623,0395004a,temp,,SIN,10,°C,
+u,22102,,TerminalStatus,Terminal-Status Broadcast (1=normal 3=Notlauf),10,fe,100a,10,state,,UCH,,,,,,IGN:10,,,,roomtemp,,SIN,10,°C,
